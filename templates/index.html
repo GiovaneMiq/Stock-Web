@@ -3,89 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <title>Gerenciador de Estoque</title>
-    <style>
-        body { font-family: Arial; margin: 30px; }
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-        th { background: #f2f2f2; }
-        .btn { padding: 5px 10px; text-decoration: none; background: #007bff; color: white; border-radius: 4px; }
-        .btn-danger { background: #dc3545; }
-        form { margin-bottom: 20px; }
-        input[type=text], input[type=number] { padding: 8px; width: 200px; }
-        label { display: inline-block; width: 120px; }
-        .busca { margin-bottom: 15px; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>📦 Estoque</h1>
+    <div class="container">
+        <header>
+            <h1>ESTOQUE</h1>
+        </header>
 
-    <!-- Formulário de busca -->
-    <div class="busca">
-        <form action="/buscar" method="get">
-            <input type="text" name="q" placeholder="Buscar produto..." value="{{ busca if busca else '' }}">
-            <button type="submit" class="btn">Buscar</button>
-            {% if busca %}
-                <a href="/" class="btn" style="background:#6c757d;">Limpar busca</a>
-            {% endif %}
-        </form>
+        <!-- Busca -->
+        <div class="search-section">
+            <form action="/buscar" method="get">
+                <input type="text" name="q" placeholder="Buscar produto..." value="{{ busca if busca else '' }}">
+                <button type="submit" class="btn">🔍 Buscar</button>
+                {% if busca %}
+                    <a href="/" class="btn btn-secondary">Limpar busca</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- Se há resultado de busca, mostra apenas os produtos filtrados -->
+        {% if resultado is defined %}
+            <div class="card">
+                <h2>Resultados para "{{ busca }}"</h2>
+                {% if resultado %}
+                    <table>
+                        <tr><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
+                        {% for nome, info in resultado.items() %}
+                        <tr>
+                            <td>{{ nome.capitalize() }}</td>
+                            <td>{{ info.quantidade }}</td>
+                            <td>R$ {{ "%.2f"|format(info.preco) }}</td>
+                            <td class="actions">
+                                <form action="/atualizar/{{ nome }}" method="post">
+                                    <input type="number" name="quantidade" value="{{ info.quantidade }}" min="0" class="qty-input">
+                                    <button type="submit" class="btn">Atualizar</button>
+                                </form>
+                                <a href="/remover/{{ nome }}" class="btn btn-danger" onclick="return confirm('Remover {{ nome }}?')">Remover</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    <p>Nenhum produto encontrado.</p>
+                {% endif %}
+            </div>
+        {% else %}
+            <!-- Adicionar novo produto -->
+            <div class="card">
+                <h2>➕ Adicionar novo produto</h2>
+                <form action="/adicionar" method="post">
+                    <label>Nome:</label>
+                    <input type="text" name="nome" required>
+                    <label>Quantidade:</label>
+                    <input type="number" name="quantidade" min="0" required>
+                    <label>Preço unitário:</label>
+                    <input type="number" name="preco" step="0.01" min="0" required>
+                    <button type="submit" class="btn">Adicionar</button>
+                </form>
+            </div>
+
+            <!-- Tabela de produtos em estoque -->
+            <div class="card">
+                <h2>📋 Produtos em estoque</h2>
+                {% if estoque %}
+                    <table>
+                        <tr><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
+                        {% for nome, info in estoque.items() %}
+                        <tr>
+                            <td>{{ nome.capitalize() }}</td>
+                            <td>{{ info.quantidade }}</td>
+                            <td>R$ {{ "%.2f"|format(info.preco) }}</td>
+                            <td class="actions">
+                                <form action="/atualizar/{{ nome }}" method="post">
+                                    <input type="number" name="quantidade" value="{{ info.quantidade }}" min="0" class="qty-input">
+                                    <button type="submit" class="btn">Atualizar</button>
+                                </form>
+                                <a href="/remover/{{ nome }}" class="btn btn-danger" onclick="return confirm('Remover {{ nome }}?')">Remover</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    <p>Estoque vazio.</p>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
-
-    <!-- Se há resultado de busca, mostra apenas os produtos filtrados -->
-    {% if resultado is defined %}
-        <h2>Resultados para "{{ busca }}"</h2>
-        {% if resultado %}
-            <table>
-                <tr><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
-                {% for nome, info in resultado.items() %}
-                <tr>
-                    <td>{{ nome.capitalize() }}</td>
-                    <td>{{ info.quantidade }}</td>
-                    <td>R$ {{ "%.2f"|format(info.preco) }}</td>
-                    <td>
-                        <form action="/atualizar/{{ nome }}" method="post" style="display:inline;">
-                            <input type="number" name="quantidade" value="{{ info.quantidade }}" min="0" style="width:60px;">
-                            <button type="submit" class="btn">Atualizar</button>
-                        </form>
-                        <a href="/remover/{{ nome }}" class="btn btn-danger" onclick="return confirm('Remover {{ nome }}?')">Remover</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-        {% else %}
-            <p>Nenhum produto encontrado.</p>
-        {% endif %}
-    {% else %}
-        <!-- Exibição normal de todo o estoque -->
-        <h2>Adicionar novo produto</h2>
-        <form action="/adicionar" method="post">
-            <label>Nome:</label> <input type="text" name="nome" required><br><br>
-            <label>Quantidade:</label> <input type="number" name="quantidade" min="0" required><br><br>
-            <label>Preço unitário:</label> <input type="number" name="preco" step="0.01" min="0" required><br><br>
-            <button type="submit" class="btn">Adicionar</button>
-        </form>
-
-        <h2>Produtos em estoque</h2>
-        {% if estoque %}
-            <table>
-                <tr><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
-                {% for nome, info in estoque.items() %}
-                <tr>
-                    <td>{{ nome.capitalize() }}</td>
-                    <td>{{ info.quantidade }}</td>
-                    <td>R$ {{ "%.2f"|format(info.preco) }}</td>
-                    <td>
-                        <form action="/atualizar/{{ nome }}" method="post" style="display:inline;">
-                            <input type="number" name="quantidade" value="{{ info.quantidade }}" min="0" style="width:60px;">
-                            <button type="submit" class="btn">Atualizar</button>
-                        </form>
-                        <a href="/remover/{{ nome }}" class="btn btn-danger" onclick="return confirm('Remover {{ nome }}?')">Remover</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-        {% else %}
-            <p>Estoque vazio.</p>
-        {% endif %}
-    {% endif %}
 </body>
 </html>
