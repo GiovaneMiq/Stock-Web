@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Editor / Claude
+CLAUDE.md
+.vscode/
+
+# OS
+.DS_Store
