@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 import json
 import os
 
 app = Flask(__name__)
+app.secret_key = 'chave-secreta-stock-web'
 ARQUIVO = 'estoque.json'
 
 def load_estoque():
@@ -26,19 +27,23 @@ def add():
     nome = request.form['nome'].strip().lower()
 
     if not nome:
-        return "Nome inválido!", 400
+        flash('Nome inválido!', 'error')
+        return redirect(url_for('index'))
     try:
         qtd = int(request.form["quantidade"])
         preco = float(request.form["preco"])
     except ValueError:
-        return "Quantidade e preço devem ser números!", 400
-    
+        flash('Quantidade e preço devem ser números!', 'error')
+        return redirect(url_for('index'))
+
     estoque = load_estoque()
     if nome in estoque:
-        return "Produto já existe! Volte e use a busca para editar.", 400
-    
-    estoque[nome] =  {'quantidade': qtd, 'preco': preco}
+        flash('Produto já existe! Use a busca para editar.', 'error')
+        return redirect(url_for('index'))
+
+    estoque[nome] = {'quantidade': qtd, 'preco': preco}
     save_estoque(estoque)
+    flash(f'Produto "{nome}" adicionado com sucesso!', 'success')
 
     return redirect(url_for('index'))
 
@@ -47,9 +52,11 @@ def remover(nome):
     estoque = load_estoque()
     nome = nome.lower()
     if nome in estoque:
-
         del estoque[nome]
         save_estoque(estoque)
+        flash(f'Produto "{nome}" removido.', 'success')
+    else:
+        flash('Produto não encontrado.', 'error')
     return redirect(url_for('index'))
 
 @app.route("/atualizar/<nome>", methods=["POST"])
@@ -58,15 +65,18 @@ def atualizar(nome):
     try:
         nova_qtd = int(request.form['quantidade'])
     except ValueError:
-        return "Quantidade inválida!", 400
-    
+        flash('Quantidade inválida!', 'error')
+        return redirect(url_for('index'))
+
     estoque = load_estoque()
 
     nome = nome.lower()
     if nome in estoque:
-
         estoque[nome]['quantidade'] = nova_qtd
         save_estoque(estoque)
+        flash(f'Quantidade de "{nome}" atualizada!', 'success')
+    else:
+        flash('Produto não encontrado.', 'error')
     return redirect(url_for("index"))
 
 @app.route("/buscar", methods=["GET"])

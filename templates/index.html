@@ -11,6 +11,15 @@
             <h1>ESTOQUE</h1>
         </header>
 
+        <!-- Mensagens de feedback -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for categoria, mensagem in messages %}
+                    <div class="alert alert-{{ categoria }}">{{ mensagem }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <!-- Busca -->
         <div class="search-section">
             <form action="/buscar" method="get">
@@ -45,21 +54,27 @@
                         {% endfor %}
                     </table>
                 {% else %}
-                    <p>Nenhum produto encontrado.</p>
+                    <p class="empty-state">🔍 Nenhum produto encontrado.</p>
                 {% endif %}
             </div>
         {% else %}
             <!-- Adicionar novo produto -->
             <div class="card">
                 <h2>➕ Adicionar novo produto</h2>
-                <form action="/adicionar" method="post">
-                    <label>Nome:</label>
-                    <input type="text" name="nome" required>
-                    <label>Quantidade:</label>
-                    <input type="number" name="quantidade" min="0" required>
-                    <label>Preço unitário:</label>
-                    <input type="number" name="preco" step="0.01" min="0" required>
-                    <button type="submit" class="btn">Adicionar</button>
+                <form action="/adicionar" method="post" class="form-grid">
+                    <div class="form-group">
+                        <label for="nome">Nome</label>
+                        <input type="text" id="nome" name="nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="quantidade">Quantidade</label>
+                        <input type="number" id="quantidade" name="quantidade" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="preco">Preço unitário</label>
+                        <input type="number" id="preco" name="preco" step="0.01" min="0" required>
+                    </div>
+                    <button type="submit" class="btn">➕ Adicionar</button>
                 </form>
             </div>
 
@@ -85,7 +100,7 @@
                         {% endfor %}
                     </table>
                 {% else %}
-                    <p>Estoque vazio.</p>
+                    <p class="empty-state">📭 Estoque vazio.</p>
                 {% endif %}
             </div>
         {% endif %}
