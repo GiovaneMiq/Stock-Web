@@ -21,8 +21,11 @@ def save_estoque(estoque):
 
 def carregar_historico():
     if os.path.exists(ARQUIVO_HISTORICO):
-        with open (ARQUIVO_HISTORICO, 'r', encoding='utf-8') as f:
-            return json.load(f)
+        try:
+            with open(ARQUIVO_HISTORICO, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return []
     return []
 
 def salvar_historico(historico):
@@ -126,5 +129,5 @@ def historico():
     return render_template('historico.html', historico=historico_reverso)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
 
