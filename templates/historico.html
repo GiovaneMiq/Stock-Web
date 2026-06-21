@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico de Alterações</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Histórico</h1>
+        </header>
+
+        <div class="search-section">
+            <a href="/" class="btn btn-secondary">← Voltar ao Estoque</a>
+        </div>
+    
+
+        <div class="card">
+            {% if historico %}
+                <table>
+                    <thead>
+                        <tr><th>Data/Hora</th><th>Tipo</th><th>Produto</th><th>Detalhes</th></tr>
+                    </thead>
+
+                    <tbody>
+                        {% for evento in historico %}
+                        <tr>
+                            <td>{{ evento.data }}</td>
+                            <td>
+                                {% if evento.tipo == 'adição' %}
+                                    ➕ Adição
+                                {% elif evento.tipo == 'remoção' %}
+                                    ❌ Remoção
+                                {% else %}
+                                    ✏️ Atualização
+                                {% endif %}
+                            </td>
+
+                            <td>{{ evento.produto.capitalize() }}</td>
+                            <td>{{ evento.detalhes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+            <div class="empty-state">Nenhum evento registrado ainda.</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
