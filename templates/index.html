@@ -62,7 +62,7 @@
             <!-- Adicionar novo produto -->
             <div class="card">
                 <h2>➕ Adicionar novo produto</h2>
-                <form action="/adicionar" method="post" class="form-grid">
+                <form action="/adicionar" method="post" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="nome">Nome</label>
                         <input type="text" id="nome" name="nome" required>
@@ -75,6 +75,10 @@
                         <label for="preco">Preço unitário</label>
                         <input type="number" id="preco" name="preco" step="0.01" min="0" required>
                     </div>
+                    <div class="form-group">
+                        <label for="imagem">Imagem do produto:</label>
+                        <input type="file" name="imagem" id="imagem" accept="image/*">
+                    </div>
                     <button type="submit" class="btn">➕ Adicionar</button>
                 </form>
             </div>
@@ -84,9 +88,16 @@
                 <h2>📋 Produtos em estoque</h2>
                 {% if estoque %}
                     <table>
-                        <tr><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
+                        <tr><th>Imagem</th><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
                         {% for nome, info in estoque.items() %}
                         <tr>
+                            <td>
+                                {% if info.imagem %}
+                                    <img src="{{ url_for('static', filename='uploads/' + info.imagem) }}" alt="{{ nome }}" class="img-thumb">
+                                {% else %}
+                                    <span class="no-image">📷</span>
+                                {% endif %}
+                            </td>
                             <td>{{ nome.capitalize() }}</td>
                             <td>{{ info.quantidade }}</td>
                             <td>R$ {{ "%.2f"|format(info.preco) }}</td>

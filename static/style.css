@@ -240,3 +240,16 @@ tr:hover {
         align-items: flex-start;
     }
 }
+
+.img-thumb {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+}
+
+.no-image {
+    font-size: 1.5rem;
+    color: #bbb;
+}
