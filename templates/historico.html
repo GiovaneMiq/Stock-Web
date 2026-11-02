@@ -1,52 +1,47 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Histórico de Alterações</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
+{% extends 'base.html' %}
+
+{% block title %}Histórico{% endblock %}
+
+{% block content %}
+    <div class="page-header">
+        <div>
             <h1>Histórico</h1>
-        </header>
-
-        <div class="search-section">
-            <a href="/" class="btn btn-secondary">← Voltar ao Estoque</a>
+            <p class="subtitle">Todas as movimentações do estoque, das mais recentes às mais antigas</p>
         </div>
-    
+    </div>
 
-        <div class="card">
-            {% if historico %}
-                <table>
+    <section class="card">
+        {% if historico %}
+            <div class="table-wrap">
+                <table class="table">
                     <thead>
                         <tr><th>Data/Hora</th><th>Tipo</th><th>Produto</th><th>Detalhes</th></tr>
                     </thead>
-
                     <tbody>
                         {% for evento in historico %}
                         <tr>
-                            <td>{{ evento.data }}</td>
-                            <td>
+                            <td data-label="Data/Hora" class="muted nowrap">{{ evento.data }}</td>
+                            <td data-label="Tipo">
                                 {% if evento.tipo == 'adição' %}
-                                    ➕ Adição
+                                    <span class="badge badge-ok">Adição</span>
                                 {% elif evento.tipo == 'remoção' %}
-                                    ❌ Remoção
+                                    <span class="badge badge-danger">Remoção</span>
                                 {% else %}
-                                    ✏️ Atualização
+                                    <span class="badge badge-info">Atualização</span>
                                 {% endif %}
                             </td>
-
-                            <td>{{ evento.produto.capitalize() }}</td>
-                            <td>{{ evento.detalhes }}</td>
+                            <td data-label="Produto" class="product-name">{{ evento.produto.capitalize() }}</td>
+                            <td data-label="Detalhes">{{ evento.detalhes }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-            {% else %}
-            <div class="empty-state">Nenhum evento registrado ainda.</div>
-            {% endif %}
-        </div>
-    </div>
-</body>
-</html>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p class="empty-title">Nenhum evento registrado ainda</p>
+                <p>As adições, atualizações e remoções aparecerão aqui.</p>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

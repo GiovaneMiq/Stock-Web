@@ -13,6 +13,13 @@ app.secret_key = 'chave-secreta-stock-web'
 ARQUIVO = 'estoque.json'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Quantidade a partir da qual o produto é sinalizado como "estoque baixo"
+ESTOQUE_BAIXO = 5
+
+@app.context_processor
+def injetar_constantes():
+    return {'ESTOQUE_BAIXO': ESTOQUE_BAIXO}
+
 def load_estoque():
     if os.path.exists(ARQUIVO):
         with open(ARQUIVO, 'r', encoding='utf-8') as f:
@@ -58,16 +65,19 @@ def add():
     nome = request.form['nome'].strip().lower()
 
     if not nome:
-        return "Nome inválido!", 400
+        flash('Nome inválido!', 'error')
+        return redirect(url_for('index'))
     try:
         qtd = int(request.form["quantidade"])
         preco = float(request.form["preco"])
     except ValueError:
-        return "Quantidade e preço devem ser números!", 400
+        flash('Quantidade e preço devem ser números!', 'error')
+        return redirect(url_for('index'))
 
     estoque = load_estoque()
     if nome in estoque:
-        return "Produto já existe! Volte e use a busca para editar.", 400
+        flash(f'O produto "{nome}" já existe. Use a busca para editá-lo.', 'error')
+        return redirect(url_for('index'))
     
     # upload das imagens dos produtos
     imagem = request.files.get('imagem')
@@ -89,6 +99,7 @@ def add():
     save_estoque(estoque)
 
     registrar_evento('adição', nome, f'Qtd: {qtd},  Preço: R$ {preco:.2f}')
+    flash(f'Produto "{nome}" adicionado!', 'success')
     return redirect(url_for('index'))
 
 @app.route("/remover/<nome>")
@@ -104,6 +115,7 @@ def remover(nome):
         del estoque[nome]
         save_estoque(estoque)
         registrar_evento('remoção', nome, 'Produto removido')
+        flash(f'Produto "{nome}" removido.', 'success')
     return redirect(url_for('index'))
 
 

@@ -1,121 +1,188 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Gerenciador de Estoque</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>ESTOQUE</h1>
-            <a href="/historico" class="btn btn-secondary">Histórico</a>
-        </header>
+{% extends 'base.html' %}
 
-        <!-- Mensagens de feedback -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for categoria, mensagem in messages %}
-                    <div class="alert alert-{{ categoria }}">{{ mensagem }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% macro tabela_produtos(produtos) %}
+<div class="table-wrap">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Quantidade</th>
+                <th class="num">Preço unit.</th>
+                <th class="num">Valor total</th>
+                <th class="right">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for nome, info in produtos.items() %}
+            <tr>
+                <td data-label="Produto">
+                    <div class="product-cell">
+                        {% if info.imagem %}
+                            <img src="{{ url_for('static', filename='uploads/' + info.imagem) }}" alt="{{ nome }}" class="img-thumb">
+                        {% else %}
+                            <span class="img-thumb img-placeholder">{{ nome[:1]|upper }}</span>
+                        {% endif %}
+                        <span class="product-name">{{ nome.capitalize() }}</span>
+                    </div>
+                </td>
+                <td data-label="Quantidade">
+                    {% if info.quantidade == 0 %}
+                        <span class="badge badge-danger">Esgotado</span>
+                    {% elif info.quantidade <= ESTOQUE_BAIXO %}
+                        <span class="badge badge-warning">{{ info.quantidade }} · baixo</span>
+                    {% else %}
+                        <span class="badge badge-ok">{{ info.quantidade }}</span>
+                    {% endif %}
+                </td>
+                <td data-label="Preço unit." class="num">R$ {{ "%.2f"|format(info.preco) }}</td>
+                <td data-label="Valor total" class="num">R$ {{ "%.2f"|format(info.preco * info.quantidade) }}</td>
+                <td data-label="Ações" class="right">
+                    <div class="actions">
+                        <form action="{{ url_for('atualizar', nome=nome) }}" method="post" class="qty-form">
+                            <input type="number" name="quantidade" value="{{ info.quantidade }}" min="0" class="qty-input" aria-label="Nova quantidade de {{ nome }}">
+                            <button type="submit" class="btn btn-sm">Salvar</button>
+                        </form>
+                        <a href="{{ url_for('remover', nome=nome) }}" class="btn btn-sm btn-ghost-danger"
+                           onclick="return confirm('Remover {{ nome }} do estoque?')" title="Remover">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                            <span class="sr-only">Remover</span>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endmacro %}
 
-        <!-- Busca -->
-        <div class="search-section">
-            <form action="/buscar" method="get">
-                <input type="text" name="q" placeholder="Buscar produto..." value="{{ busca if busca else '' }}">
-                <button type="submit" class="btn">🔍 Buscar</button>
-                {% if busca %}
-                    <a href="/" class="btn btn-secondary">Limpar busca</a>
-                {% endif %}
-            </form>
+{% block title %}Estoque{% endblock %}
+
+{% block content %}
+    {% set itens = estoque.values()|list %}
+    {% set total_unidades = itens|sum(attribute='quantidade') %}
+    {% set ns = namespace(valor=0, baixo=0) %}
+    {% for i in itens %}
+        {% set ns.valor = ns.valor + i.preco * i.quantidade %}
+        {% if i.quantidade <= ESTOQUE_BAIXO %}{% set ns.baixo = ns.baixo + 1 %}{% endif %}
+    {% endfor %}
+
+    <div class="page-header">
+        <div>
+            <h1>Estoque</h1>
+            <p class="subtitle">Gerencie seus produtos e quantidades</p>
         </div>
+        <form action="{{ url_for('buscar') }}" method="get" class="search">
+            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" name="q" placeholder="Buscar produto..." value="{{ busca if busca else '' }}" aria-label="Buscar produto">
+        </form>
+    </div>
 
-        <!-- Se há resultado de busca, mostra apenas os produtos filtrados -->
-        {% if resultado is defined %}
-            <div class="card">
-                <h2>Resultados para "{{ busca }}"</h2>
-                {% if resultado %}
-                    <table>
-                        <tr><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
-                        {% for nome, info in resultado.items() %}
-                        <tr>
-                            <td>{{ nome.capitalize() }}</td>
-                            <td>{{ info.quantidade }}</td>
-                            <td>R$ {{ "%.2f"|format(info.preco) }}</td>
-                            <td class="actions">
-                                <form action="/atualizar/{{ nome }}" method="post">
-                                    <input type="number" name="quantidade" value="{{ info.quantidade }}" min="0" class="qty-input">
-                                    <button type="submit" class="btn">Atualizar</button>
-                                </form>
-                                <a href="/remover/{{ nome }}" class="btn btn-danger" onclick="return confirm('Remover {{ nome }}?')">Remover</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </table>
-                {% else %}
-                    <p class="empty-state">🔍 Nenhum produto encontrado.</p>
-                {% endif %}
+    <section class="stats">
+        <div class="stat">
+            <span class="stat-label">Produtos</span>
+            <span class="stat-value">{{ itens|length }}</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Unidades em estoque</span>
+            <span class="stat-value">{{ total_unidades }}</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Valor total</span>
+            <span class="stat-value">R$ {{ "%.2f"|format(ns.valor) }}</span>
+        </div>
+        <div class="stat {% if ns.baixo %}stat-alert{% endif %}">
+            <span class="stat-label">Estoque baixo (≤ {{ ESTOQUE_BAIXO }})</span>
+            <span class="stat-value">{{ ns.baixo }}</span>
+        </div>
+    </section>
+
+    {% if resultado is defined %}
+        <section class="card">
+            <div class="card-header">
+                <h2>Resultados para “{{ busca }}”</h2>
+                <a href="{{ url_for('index') }}" class="btn btn-sm btn-secondary">Limpar busca</a>
             </div>
-        {% else %}
-            <!-- Adicionar novo produto -->
-            <div class="card">
-                <h2>➕ Adicionar novo produto</h2>
-                <form action="/adicionar" method="post" enctype="multipart/form-data">
+            {% if resultado %}
+                {{ tabela_produtos(resultado) }}
+            {% else %}
+                <div class="empty-state">
+                    <p class="empty-title">Nenhum produto encontrado</p>
+                    <p>Tente outro termo de busca.</p>
+                </div>
+            {% endif %}
+        </section>
+    {% else %}
+        <div class="layout">
+            <section class="card">
+                <div class="card-header">
+                    <h2>Novo produto</h2>
+                </div>
+                <form action="{{ url_for('add') }}" method="post" enctype="multipart/form-data" class="form">
+                    <label class="upload" for="imagem">
+                        <img id="preview" alt="" hidden>
+                        <span class="upload-hint" id="upload-hint">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+                            <span>Clique para adicionar imagem</span>
+                            <small>Opcional · PNG, JPG</small>
+                        </span>
+                        <input type="file" name="imagem" id="imagem" accept="image/*">
+                    </label>
+
                     <div class="form-group">
                         <label for="nome">Nome</label>
-                        <input type="text" id="nome" name="nome" required>
+                        <input type="text" id="nome" name="nome" placeholder="Ex.: Caneta azul" required>
                     </div>
-                    <div class="form-group">
-                        <label for="quantidade">Quantidade</label>
-                        <input type="number" id="quantidade" name="quantidade" min="0" required>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quantidade">Quantidade</label>
+                            <input type="number" id="quantidade" name="quantidade" min="0" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="preco">Preço unitário</label>
+                            <div class="input-prefix">
+                                <span>R$</span>
+                                <input type="number" id="preco" name="preco" step="0.01" min="0" placeholder="0,00" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="preco">Preço unitário</label>
-                        <input type="number" id="preco" name="preco" step="0.01" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="imagem">Imagem do produto:</label>
-                        <input type="file" name="imagem" id="imagem" accept="image/*">
-                    </div>
-                    <button type="submit" class="btn">➕ Adicionar</button>
+                    <button type="submit" class="btn btn-block">Adicionar produto</button>
                 </form>
-            </div>
+            </section>
 
-            <!-- Tabela de produtos em estoque -->
-            <div class="card">
-                <h2>📋 Produtos em estoque</h2>
+            <section class="card">
+                <div class="card-header">
+                    <h2>Produtos em estoque</h2>
+                    <span class="muted">{{ itens|length }} {{ 'item' if itens|length == 1 else 'itens' }}</span>
+                </div>
                 {% if estoque %}
-                    <table>
-                        <tr><th>Imagem</th><th>Produto</th><th>Quantidade</th><th>Preço</th><th>Ações</th></tr>
-                        {% for nome, info in estoque.items() %}
-                        <tr>
-                            <td>
-                                {% if info.imagem %}
-                                    <img src="{{ url_for('static', filename='uploads/' + info.imagem) }}" alt="{{ nome }}" class="img-thumb">
-                                {% else %}
-                                    <span class="no-image">📷</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ nome.capitalize() }}</td>
-                            <td>{{ info.quantidade }}</td>
-                            <td>R$ {{ "%.2f"|format(info.preco) }}</td>
-                            <td class="actions">
-                                <form action="/atualizar/{{ nome }}" method="post">
-                                    <input type="number" name="quantidade" value="{{ info.quantidade }}" min="0" class="qty-input">
-                                    <button type="submit" class="btn">Atualizar</button>
-                                </form>
-                                <a href="/remover/{{ nome }}" class="btn btn-danger" onclick="return confirm('Remover {{ nome }}?')">Remover</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </table>
+                    {{ tabela_produtos(estoque) }}
                 {% else %}
-                    <p class="empty-state">📭 Estoque vazio.</p>
+                    <div class="empty-state">
+                        <p class="empty-title">Seu estoque está vazio</p>
+                        <p>Adicione o primeiro produto usando o formulário.</p>
+                    </div>
                 {% endif %}
-            </div>
-        {% endif %}
-    </div>
-</body>
-</html>
+            </section>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Pré-visualização da imagem selecionada
+    (function () {
+        var input = document.getElementById('imagem');
+        if (!input) return;
+        var preview = document.getElementById('preview');
+        var hint = document.getElementById('upload-hint');
+        input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            if (!file) { preview.hidden = true; hint.hidden = false; return; }
+            preview.src = URL.createObjectURL(file);
+            preview.hidden = false;
+            hint.hidden = true;
+        });
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Estoque{% endblock %} · Stock Web</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="topbar">
+        <div class="topbar-inner">
+            <a href="{{ url_for('index') }}" class="brand">
+                <span class="brand-logo">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg>
+                </span>
+                Stock Web
+            </a>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint in ['index', 'buscar'] %}active{% endif %}">Estoque</a>
+                <a href="{{ url_for('historico') }}" class="nav-link {% if request.endpoint == 'historico' %}active{% endif %}">Histórico</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alerts">
+                {% for categoria, mensagem in messages %}
+                    <div class="alert alert-{{ categoria }}" role="status">
+                        <span>{{ mensagem }}</span>
+                        <button type="button" class="alert-close" aria-label="Fechar" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Some com os alertas de sucesso após alguns segundos
+        document.querySelectorAll('.alert-success').forEach(function (el) {
+            setTimeout(function () {
+                el.classList.add('fade-out');
+                setTimeout(function () { el.remove(); }, 300);
+            }, 4000);
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
