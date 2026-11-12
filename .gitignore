@@ -15,3 +15,7 @@ CLAUDE.md
 estoque.json
 historico.json
 static/uploads/
+
+# Login (dados sensíveis)
+usuarios.json
+secret_key.txt

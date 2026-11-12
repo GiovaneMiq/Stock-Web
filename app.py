@@ -1,17 +1,30 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import json
 import os
+import secrets
 from datetime import datetime
+from functools import wraps
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
 ARQUIVO_HISTORICO = 'historico.json'
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.secret_key = 'chave-secreta-stock-web'
 ARQUIVO = 'estoque.json'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+ARQUIVO_CHAVE = 'secret_key.txt'
+
+def carregar_chave_secreta():
+    if os.path.exists(ARQUIVO_CHAVE):
+        with open(ARQUIVO_CHAVE, 'r') as f:
+            return f.read().strip()
+    chave = secrets.token_hex(32)
+    with open(ARQUIVO_CHAVE, 'w') as f:
+        f.write(chave)
+    return chave
+app.secret_key = carregar_chave_secreta()
 
 # Quantidade a partir da qual o produto é sinalizado como "estoque baixo"
 ESTOQUE_BAIXO = 5
